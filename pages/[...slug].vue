@@ -3,7 +3,7 @@
     <div v-if="item">
       <h1>{{ item.values.name.value }}</h1>
       <ul>
-        <li v-for="mod in modulesWithContent" :key="mod.id">
+        <li v-for="mod in modulesDeep" :key="mod.id">
           <pre>{{ mod }}</pre>
         </li>
       </ul>
@@ -63,15 +63,44 @@ const { data: modulesRes } = await useAsyncData(
   }
 )
 
-const modulesWithContent = computed(() => {
-  if (!item.value) return []
-  const originals = item.value.values.modules
-  const contents = modulesRes.value || []
-  return originals.map((orig, idx) => ({
-    id: orig.id,
-    field_type: orig.field_type,
-    collection: orig.collection,
-    value: contents[idx] || null
-  }))
-})
+const { data: nestedRes } = await useAsyncData(
+  `nested-modules-${rawSlug}`,
+  async () => {
+    const level1 = modulesRes.value || []
+    if (!level1.length) return []
+
+    async function fetchNested(mod: PageContentItem) {
+      const nestedFields: Record<string, PageContentItem[]> = {}
+      for (const [key, fieldValue] of Object.entries(mod.values)) {
+        if (Array.isArray(fieldValue)) {
+          const ids = (fieldValue as Array<{ value: string }>).map((e) => e.value)
+          const promises = ids.map((id) =>
+            $fetch<{ success: boolean; data: PageContentItem; meta: { timestamp: string } }>(
+              `${config.public.apiBaseUrl}/api/content/${id}`,
+              {
+                headers: { 'X-API-Key': config.apiKey }
+              }
+            )
+          )
+          const results = await Promise.all(promises)
+          nestedFields[key] = results.map((r) => r.data)
+        }
+      }
+      return { ...mod, nested: nestedFields }
+    }
+
+    const all = await Promise.all(level1.map((m) => fetchNested(m)))
+    return all
+  }
+)
+
+const modulesDeep = computed(() => nestedRes.value || [])
 </script>
+
+<style scoped>
+.module-block {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border: 1px solid #ccc;
+}
+</style>
