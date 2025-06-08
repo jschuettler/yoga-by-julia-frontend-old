@@ -1,21 +1,19 @@
 <template>
   <div class="the-page">
+    <TheHeader />
     <div v-if="item">
-      <h1>{{ item.values.name.value }}</h1>
-      <ul>
-        <li v-for="mod in modulesDeep" :key="mod.id">
-          <pre>{{ mod }}</pre>
-        </li>
-      </ul>
+      <template v-for="mod in modulesDeep" :key="mod.id">
+        <TheModule :data="mod" />
+      </template>
     </div>
-    <div v-else>
-      Seite nicht gefunden
-    </div>
+    <TheFooter />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRoute, useRuntimeConfig, computed } from '#imports'
+import TheHeader from '~/components/the-header.vue'
+import TheFooter from '~/components/the-footer.vue'
 import type { PageContentItem, PageContentResponse } from '~/types/page'
 
 const route = useRoute()

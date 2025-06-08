@@ -28,6 +28,7 @@ export interface PageContentValues {
   modules: Module[]
   name: NameField
   slug: SlugField
+  [key: string]: any
 }
 
 export interface PageContentItem {
@@ -35,6 +36,8 @@ export interface PageContentItem {
   created_at: string
   updated_at: string
   values: PageContentValues
+  collection: ModuleCollection
+  nested?: PageContentValues
 }
 
 export interface PageContentMeta {
